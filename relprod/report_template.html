@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Related Products</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a review sheet. Summary and the slot legend on top, then one row per PDP:
+   the product being viewed on the left, its 4 configured cards to the right. */
+:root {
+  --bg: #f6f7f4;
+  --surface: #ffffff;
+  --ink: #1d2620;
+  --muted: #5d6b62;
+  --line: #dde2dc;
+  --accent: #b0315f;
+  --accent-soft: #f7e6ec;
+  --s-closest: #2f6b4f;
+  --s-proven: #3b5ba5;
+  --s-step: #9a5b12;
+  --s-disc: #7a3f9a;
+  --flag: #a3402a;
+  --flag-soft: #fbeae4;
+  --display: "Familjen Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --body: "Public Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131815; --surface: #1b221e; --ink: #e6ece7; --muted: #9aa89f; --line: #2c3530;
+    --accent: #e27a9f; --accent-soft: #3a2029; --s-closest: #6fc39a; --s-proven: #8fa9eb;
+    --s-step: #e0a45a; --s-disc: #c79be0; --flag: #ee9a82; --flag-soft: #3a231c; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #131815; --surface: #1b221e; --ink: #e6ece7; --muted: #9aa89f; --line: #2c3530;
+  --accent: #e27a9f; --accent-soft: #3a2029; --s-closest: #6fc39a; --s-proven: #8fa9eb;
+  --s-step: #e0a45a; --s-disc: #c79be0; --flag: #ee9a82; --flag-soft: #3a231c; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font: 15px/1.5 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 64px;
+}
+.wrap { max-width: 1240px; margin: 0 auto; display: grid; gap: 36px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.15; }
+h1 { font-size: clamp(28px, 4vw, 40px); font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 22px; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.lede { color: var(--muted); font-size: 16px; }
+header { display: grid; gap: 10px; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* summary */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 1px; background: var(--line);
+  border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.stat { background: var(--surface); padding: 16px 18px; display: grid; gap: 4px; align-content: start; }
+.stat b { font: 600 28px/1.1 var(--display); font-variant-numeric: tabular-nums; }
+.stat span { color: var(--muted); font-size: 13px; }
+
+/* slots legend */
+.section { display: grid; gap: 14px; }
+.slots { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.slot { border-top: 3px solid var(--c); padding: 12px 2px 0; display: grid; gap: 4px; align-content: start; }
+.slot h3 { font-size: 16px; display: flex; gap: 8px; align-items: baseline; }
+.slot h3 i { font: 500 12px var(--mono); font-style: normal; color: var(--c); }
+.slot p { font-size: 14px; color: var(--muted); }
+.slot .band { font: 12px var(--mono); color: var(--ink); }
+.rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 8px 28px; padding: 0; margin: 0; list-style: none; }
+.rules li { font-size: 14px; color: var(--muted); padding-left: 14px; position: relative; }
+.rules li::before { content: ""; position: absolute; left: 0; top: 0.62em; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.rules b { color: var(--ink); font-weight: 600; }
+
+/* controls */
+.controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--bg); padding-block: 10px; border-bottom: 1px solid var(--line); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.controls label { display: grid; gap: 4px; font: 500 11px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.controls input, .controls select { font: 14px var(--body); color: var(--ink); background: var(--surface); border: 1px solid var(--line);
+  border-radius: 7px; padding: 8px 10px; min-width: 0; }
+.controls input { width: min(320px, 100%); }
+.controls input:focus-visible, .controls select:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.count { margin-left: auto; font: 13px var(--mono); color: var(--muted); align-self: center; }
+
+/* PDP rows */
+.list { display: grid; gap: 14px; }
+.row { display: grid; grid-template-columns: 250px 1fr; gap: 14px; background: var(--surface); border: 1px solid var(--line);
+  border-radius: 10px; padding: 14px; content-visibility: auto; contain-intrinsic-size: auto 260px; }
+.src { display: grid; gap: 8px; align-content: start; min-width: 0; }
+.src .top { display: grid; grid-template-columns: 64px 1fr; gap: 10px; align-items: start; }
+.src img, .card img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; background: var(--line); display: block; }
+.src h3 { font-size: 16px; font-weight: 600; }
+.src h3 a { color: inherit; text-decoration: none; }
+.src h3 a:hover { text-decoration: underline; }
+.meta { font: 12px/1.5 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.tag { font-size: 11.5px; padding: 1px 7px; border-radius: 99px; background: var(--bg); border: 1px solid var(--line); color: var(--muted); }
+.cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; min-width: 0; }
+.card { display: grid; grid-template-rows: auto auto auto 1fr; gap: 5px; border-top: 3px solid var(--c); padding-top: 8px; min-width: 0; }
+.card .head { display: flex; justify-content: space-between; gap: 6px; align-items: baseline; }
+.chip { font: 500 11px var(--mono); color: var(--c); letter-spacing: 0.02em; }
+.pos { font: 11px var(--mono); color: var(--muted); }
+.card .imgline { display: grid; grid-template-columns: 52px 1fr; gap: 8px; align-items: start; }
+.card .name { font-weight: 600; font-size: 14px; line-height: 1.25; overflow-wrap: anywhere; }
+.card .name a { color: inherit; text-decoration: none; }
+.card .name a:hover { text-decoration: underline; }
+.price { font: 12px var(--mono); font-variant-numeric: tabular-nums; color: var(--muted); }
+.price .up { color: var(--s-step); } .price .down { color: var(--s-closest); }
+.why { font-size: 12.5px; color: var(--muted); line-height: 1.4; overflow-wrap: anywhere; }
+.flag { justify-self: start; font: 500 10.5px var(--mono); text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 6px; border-radius: 4px;
+  color: var(--flag); background: var(--flag-soft); }
+.more { justify-self: center; font: 600 14px var(--body); color: var(--accent); background: var(--accent-soft); border: 0; border-radius: 8px; padding: 10px 18px; cursor: pointer; }
+.empty { color: var(--muted); padding: 24px 0; }
+
+/* effect + next */
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 28px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+td, th { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 500 11px var(--mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+td.n { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--mono); white-space: nowrap; }
+.tablewrap { overflow-x: auto; }
+ol.next { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
+ol.next li { max-width: 68ch; }
+code { font: 13px var(--mono); background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+
+@media (max-width: 900px) {
+  .row { grid-template-columns: 1fr; }
+  .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow" id="eyebrow">Related products · proposal</div>
+    <h1>Which 4 products each PDP should recommend</h1>
+    <p class="lede" id="lede"></p>
+  </header>
+
+  <div class="stats" id="stats"></div>
+
+  <section class="section" aria-labelledby="h-slots">
+    <h2 id="h-slots">How the 4 cards are chosen</h2>
+    <div class="slots" id="slots"></div>
+    <ul class="rules">
+      <li><b>Only linkable products.</b> Published, not a test product, not excluded from search, and not a seasonal product out of season.</li>
+      <li><b>Funeral is a closed group.</b> Any product tagged funeral, even alongside other occasions, links only to and from other funeral-tagged products. Grand-opening stands stay among stands.</li>
+      <li><b>No near-duplicates.</b> Never the same product in another size, and at most one colour variant of the product being viewed.</li>
+      <li><b>Relevance</b> blends shared occasion, recipient, gift type and flower (rare tags count more) with what shoppers did: sessions that viewed both, and sessions that viewed this product but bought the other.</li>
+      <li><b>Every product gets links.</b> Each linkable product is recommended from at least 2 and at most 12 PDPs, so no page is orphaned and best-sellers don't take every slot.</li>
+      <li><b>Busy pages first.</b> PDPs with the most traffic pick their conversion cards first. Coverage fixes go to quieter pages.</li>
+    </ul>
+  </section>
+
+  <section class="section" aria-labelledby="h-list">
+    <h2 id="h-list">Every PDP and its proposed cards</h2>
+    <div class="controls">
+      <label for="q">Search<input id="q" type="search" placeholder="Product name or slug" autocomplete="off"></label>
+      <label for="occ">Occasion<select id="occ"><option value="">All occasions</option></select></label>
+      <label for="flag">Show<select id="flag">
+        <option value="">All PDPs</option>
+        <option value="cover">With a coverage card</option>
+        <option value="fallback">With a fallback card</option>
+        <option value="unlinkable">Products not linked anywhere</option>
+        <option value="changed" data-live>Live engine set changes</option>
+        <option value="kept" data-live>Live engine set unchanged</option>
+        <option value="fromrot" data-live>Rotation today, new set</option>
+      </select></label>
+      <label for="sort">Sort<select id="sort">
+        <option value="views">Most viewed first</option>
+        <option value="orders">Most orders first</option>
+        <option value="name">Name A to Z</option>
+      </select></label>
+      <span class="count" id="count"></span>
+    </div>
+    <div class="list" id="list"></div>
+    <button class="more" id="more" type="button" hidden>Show 40 more</button>
+  </section>
+
+  <section class="two" aria-label="Effect and next steps">
+    <div class="section">
+      <h2>Effect on internal links</h2>
+      <p class="lede" id="effect-lede"></p>
+      <div class="tablewrap"><table id="effect"></table></div>
+    </div>
+    <div class="section" id="rollout" hidden>
+      <h2>Rollout plan</h2>
+      <ol class="next" id="rollout-steps"></ol>
+    </div>
+    <div class="section" id="nextsteps">
+      <h2>Before it goes live</h2>
+      <ol class="next">
+        <li><b>Review the busiest PDPs by hand.</b> The first 50 rows (sorted by views) carry most of the traffic. Swap any card that a merchandiser knows is wrong; the rest can go in as generated.</li>
+        <li><b>Import.</b> <code>product_related.sql</code> fills the <code>product_related</code> table (<code>product_id</code>, <code>related_product_id</code>, <code>prioritization</code> 1 to 4) for every product in one transaction; <code>product_related.csv</code> has the same rows. Developers confirm that a lower <code>prioritization</code> shows first.</li>
+        <li><b>Track clicks.</b> Without a GA4 <code>select_item</code> event on related cards, their clicks are invisible. Fire <code>select_item</code> with <code>item_list_name = related_products</code> and the card position before launch.</li>
+        <li><b>Test, don't switch.</b> Configure half the products and keep rotation on the other half for 4 to 6 weeks. Compare PDP-to-purchase rate (any product), revenue per PDP session and related-card click rate.</li>
+        <li><b>Regenerate</b> monthly and before each peak (see <code>seasons.py</code>). Sets are fixed, so an unpublished card stays on the page until the next run.</li>
+      </ol>
+    </div>
+  </section>
+</div>
+
+<script type="application/json" id="data">/*DATA*/null</script>
+<script type="application/json" id="imgs">/*IMGS*/null</script>
+<script>
+(function () {
+  const D = JSON.parse(document.getElementById("data").textContent);
+  const IMG = JSON.parse(document.getElementById("imgs").textContent) || {};
+  const P = D.products, S = D.summary, cur = { USD: "$", EUR: "€", GBP: "£" }[D.shop.currency] || D.shop.currency + " ";
+  const SLOT = {}; const COLORS = { closest: "--s-closest", proven: "--s-proven", step_up: "--s-step", discovery: "--s-disc" };
+  D.slots.forEach(s => SLOT[s.id] = s);
+  const fmt = n => Number(n).toLocaleString("en-US");
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const money = n => cur + Math.round(n);
+  const L = D.live;   // rollout review: the sets the A/B test put live (engine arm); absent = rotation
+  if (!L) document.querySelectorAll("[data-live]").forEach(o => o.remove());
+
+  document.getElementById("eyebrow").textContent = `${D.shop.name} · related products · ${S.date}`;
+  document.getElementById("lede").textContent =
+    `A proposed fixed set of 4 related products for each of ${fmt(S.pdps)} product pages, replacing the random rotation. ` +
+    `Picked from ${S.inputs.ga4 ? `12 months of GA4 shopper behaviour (${S.inputs.ga4.replace("..", " to ")}), ` : ""}delivered orders, ` +
+    `search demand${D.tipr ? " and the TIPR link model" : ""}. Nothing has been changed in the CMS.`;
+  if (L) {
+    const ids = Object.keys(D.picks), inLive = ids.filter(id => L[id]);
+    const kept = inLive.reduce((n, id) => n + D.picks[id].filter(c => L[id].includes(Number(c.id))).length, 0);
+    const liveCards = inLive.reduce((n, id) => n + L[id].length, 0);
+    const same = inLive.filter(id => D.picks[id].length === L[id].length && D.picks[id].every(c => L[id].includes(Number(c.id)))).length;
+    document.getElementById("eyebrow").textContent = `${D.shop.name} · related products · rollout review · ${S.date}`;
+    document.getElementById("lede").textContent =
+      `Proposed sets for every product page, to replace both arms of the A/B test${D.live_start ? ` that started ${D.live_start}` : ""}. ` +
+      `${fmt(inLive.length)} PDPs have an engine set live today: ${fmt(kept)} of their ${fmt(liveCards)} cards stay (${Math.round(kept / liveCards * 100)}%), ` +
+      `${fmt(same)} sets are unchanged. The other ${fmt(ids.length - inLive.length)} PDPs show the random rotation today and get a fixed set for the first time. ` +
+      `Cards marked "New" are not in today's live set; "Leaves" lists what they replace. Nothing has been changed in the CMS.`;
+    document.getElementById("rollout").hidden = false;
+    document.getElementById("nextsteps").hidden = true;
+    document.getElementById("rollout-steps").innerHTML = [
+      `<b>Read the test first.</b> <code>python -m relprod.abtest results</code>: load the new sets only if related clicks per PDP view are up on engine PDPs.`,
+      `<b>Review the busiest PDPs.</b> Sort by views; the top 50 carry most traffic. Use "Live engine set changes" to see where proven cards are swapped out.`,
+      `<b>Import</b> <code>product_related.sql</code> for all ${fmt(ids.length)} PDPs. It replaces the live sets, it does not add rows to them.`,
+      `<b>Close the test</b>, then track related clicks before vs after, and rebuild before each season.`,
+    ].map(x => `<li>${x}</li>`).join("");
+  }
+
+  // summary
+  const picks = Object.entries(D.picks);
+  const cards = picks.reduce((n, [, c]) => n + c.length, 0);
+  const linkable = Object.values(P).filter(p => p.linkable);
+  const beforeLow = linkable.filter(p => p.before < S.config.min_inbound).length;
+  const fallbacks = picks.reduce((n, [, c]) => n + c.filter(x => x.reason.startsWith("Fallback")).length, 0);
+  const stats = [
+    [fmt(cards), `cards on ${fmt(S.pdps)} PDPs` + (S.cards_filled && Object.keys(S.cards_filled).length > 1
+      ? `, ${fmt(S.cards_filled["4"] || 0)} with all 4` : ", all 4 filled on every page")],
+    [Math.round(S.with_behaviour_evidence * 100) + "%", "of cards backed by what shoppers actually viewed or bought instead"],
+    [`${S.inbound_after.zero === 0 ? S.config.min_inbound : 0} to ${S.inbound_after.max}`, `PDPs recommending each of the ${fmt(linkable.length)} linkable products`],
+    [fmt(beforeLow), `products the rotation recommended from fewer than ${S.config.min_inbound} PDPs on average. Now none.`],
+    [fmt(S.coverage_fixes) + " · " + fmt(fallbacks), "coverage cards · fallback cards (flagged in the list)"],
+  ];
+  document.getElementById("stats").innerHTML = stats.map(([b, s]) => `<div class="stat"><b>${esc(b)}</b><span>${esc(s)}</span></div>`).join("");
+
+  // slots
+  document.getElementById("slots").innerHTML = D.slots.map((s, i) => {
+    const [lo, hi] = s.price;
+    return `<div class="slot" style="--c: var(${COLORS[s.id]})"><h3><i>${i + 1}</i>${esc(s.label)}</h3>
+      <p>${esc(s.why)}.</p><div class="band">${Math.round((lo - 1) * 100)}% to +${Math.round((hi - 1) * 100)}% of the viewed price</div></div>`;
+  }).join("");
+
+  // filters
+  const occs = new Set(); Object.values(P).forEach(p => p.occ.forEach(o => occs.add(o)));
+  const occSel = document.getElementById("occ");
+  [...occs].sort().forEach(o => occSel.insertAdjacentHTML("beforeend", `<option value="${esc(o)}">${esc(o.replace(/-/g, " "))}</option>`));
+
+  const els = { q: document.getElementById("q"), occ: occSel, flag: document.getElementById("flag"), sort: document.getElementById("sort"),
+    list: document.getElementById("list"), more: document.getElementById("more"), count: document.getElementById("count") };
+  try { const saved = JSON.parse(localStorage.getItem("relprod-filters") || "{}");
+    ["q", "occ", "flag", "sort"].forEach(k => { if (saved[k] != null) els[k].value = saved[k]; }); } catch (e) {}
+
+  const img = id => IMG[id] ? `<img src="${IMG[id]}" alt="" loading="lazy" width="112" height="112">` : `<img alt="">`;
+  const link = (p) => `<a href="${esc(D.shop.origin)}/product/${esc(p.slug)}" target="_blank" rel="noopener">${esc(p.name)}</a>`;
+
+  function card(src, c, srcId) {
+    const p = P[c.id], s = SLOT[c.slot];
+    const d = Math.round((p.price / src.price - 1) * 100);
+    const dCls = d > 0 ? "up" : d < 0 ? "down" : "";
+    let why = c.reason, flag = "";
+    if (why.startsWith("Coverage: ")) { why = why.slice(10); flag = `<span class="flag">Coverage</span>`; }
+    if (why.startsWith("Fallback (nothing qualified for this slot): ")) { why = why.slice(44); flag = `<span class="flag">Fallback</span>`; }
+    why = why.replace(/; price [^;]+/, "");
+    if (L && L[srcId] && !L[srcId].includes(Number(c.id))) flag += `<span class="flag">New</span>`;
+    return `<div class="card" style="--c: var(${COLORS[c.slot]})">
+      <div class="head"><span class="chip">${esc(s.label)}</span><span class="pos">#${c.pos}</span></div>
+      <div class="imgline">${img(c.id)}<div><div class="name">${link(p)}</div>
+        <div class="price">${money(p.price)} <span class="${dCls}">${d > 0 ? "+" : ""}${d}%</span></div></div></div>
+      ${flag}<div class="why">${esc(why)}</div></div>`;
+  }
+
+  function row(id) {
+    const p = P[id], cs = D.picks[id] || [];
+    const tags = [...p.occ, ...p.rec, ...p.kind.filter(k => k !== "flowers"), ...p.flw].slice(0, 7);
+    const linkNote = p.linkable ? `recommended from ${p.in} PDPs (rotation ≈ ${p.before})` : `not recommended anywhere: ${p.why}`;
+    let liveNote = "";
+    if (L) {
+      const lv = L[id];
+      if (!lv) liveNote = `<div class="meta">Live today: random rotation</div>`;
+      else {
+        const ids = cs.map(c => Number(c.id)), gone = lv.filter(x => !ids.includes(x));
+        liveNote = `<div class="meta">Live today: engine set, ${lv.length - gone.length} of ${lv.length} kept</div>` +
+          (gone.length ? `<div class="meta">Leaves: ${gone.map(x => P[x] ? esc(P[x].name) : "#" + x).join(", ")}</div>` : "");
+      }
+    }
+    return `<article class="row"><div class="src"><div class="top">${img(id)}<div><h3>${link(p)}</h3>
+      <div class="meta">${money(p.price)} · ${fmt(p.views)} views · ${fmt(p.orders)} orders</div></div></div>
+      <div class="meta">${esc(linkNote)}</div>${liveNote}
+      <div class="tags">${tags.map(t => `<span class="tag">${esc(t.replace(/-/g, " "))}</span>`).join("")}</div></div>
+      <div class="cards">${cs.map(c => card(p, c, id)).join("")}</div></article>`;
+  }
+
+  let shown = 40, rows = [];
+  function apply() {
+    const q = els.q.value.trim().toLowerCase(), occ = els.occ.value, flag = els.flag.value, sort = els.sort.value;
+    try { localStorage.setItem("relprod-filters", JSON.stringify({ q, occ, flag, sort })); } catch (e) {}
+    rows = Object.keys(P).filter(id => {
+      const p = P[id], cs = D.picks[id] || [];
+      if (q && !(p.name.toLowerCase().includes(q) || p.slug.includes(q))) return false;
+      if (occ && !p.occ.includes(occ)) return false;
+      if (flag === "cover" && !cs.some(c => c.reason.startsWith("Coverage"))) return false;
+      if (flag === "fallback" && !cs.some(c => c.reason.startsWith("Fallback"))) return false;
+      if (flag === "unlinkable" && p.linkable) return false;
+      if (flag === "fromrot" && (L[id] || !cs.length)) return false;
+      if (flag === "changed" || flag === "kept") {
+        if (!L[id]) return false;
+        const same = cs.length === L[id].length && cs.every(c => L[id].includes(Number(c.id)));
+        if ((flag === "kept") !== same) return false;
+      }
+      return true;
+    });
+    const by = { views: (a, b) => P[b].views - P[a].views, orders: (a, b) => P[b].orders - P[a].orders,
+      name: (a, b) => P[a].name.localeCompare(P[b].name) }[sort];
+    rows.sort(by); shown = 40; render();
+  }
+  function render() {
+    els.list.innerHTML = rows.length ? rows.slice(0, shown).map(row).join("") : `<p class="empty">No PDPs match these filters.</p>`;
+    els.more.hidden = rows.length <= shown;
+    els.count.textContent = `${Math.min(shown, rows.length)} of ${rows.length} PDPs`;
+  }
+  ["input", "change"].forEach(ev => ["q", "occ", "flag", "sort"].forEach(k => els[k].addEventListener(ev, apply)));
+  els.more.addEventListener("click", () => { shown += 40; render(); });
+  apply();
+
+  // effect
+  const T = D.tipr, el = document.getElementById("effect"), lede = document.getElementById("effect-lede");
+  if (!T) { el.closest(".section").hidden = true; return; }
+  lede.textContent = `Scored in the TIPR model against the current site (rotation, pre-footer fixed). ` +
+    `Total equity on product pages barely moves (${T.product_total_pct > 0 ? "+" : ""}${T.product_total_pct}%): the gain is stable, crawlable links ` +
+    `and equity shifting toward products that sell or are searched for. Long-tail products give some up, but none drop below 2 links.`;
+  const pct = v => `${v > 0 ? "+" : ""}${v}%`;
+  el.innerHTML = `<thead><tr><th>Product group</th><th>Products</th><th>Link equity</th></tr></thead><tbody>
+    <tr><td>Sold 20+ orders in 12 months</td><td class="n">${T.sellers_20_orders.n}</td><td class="n">${pct(T.sellers_20_orders.pct)}</td></tr>
+    <tr><td>100+ non-brand search impressions</td><td class="n">${T.search_100_impr.n}</td><td class="n">${pct(T.search_100_impr.pct)}</td></tr>
+    <tr><td>No orders in 12 months</td><td class="n">${T.no_orders.n}</td><td class="n">${pct(T.no_orders.pct)}</td></tr>
+    <tr><td>All product pages</td><td class="n">${T.products}</td><td class="n">${pct(T.product_total_pct)}</td></tr>
+    <tr><td>Subcategory listings</td><td class="n"></td><td class="n">${pct(T.subcategory_pct)}</td></tr>
+    <tr><td>Products gaining · losing equity</td><td class="n"></td><td class="n">${T.up} · ${T.down}</td></tr></tbody>`;
+})();
+</script>

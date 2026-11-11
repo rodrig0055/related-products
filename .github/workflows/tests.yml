@@ -1,0 +1,14 @@
+name: tests
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv run --group dev pytest -q
+      - name: Demo build end to end
+        run: |
+          uv run python examples/make_demo.py
+          uv run run.py build --shop demo > /dev/null
+          uv run python -m tests.test_engine out/demo/$(date +%F)
